@@ -1,0 +1,646 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Career Companion</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .roadmap-card {
+            margin: 15px 0;
+            padding: 18px;
+            border: 1px solid #dce4f5;
+            border-radius: 10px;
+            background: #f8faff;
+        }
+
+        .roadmap-check-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .roadmap-checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: #2446a6;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 12px;
+            background: #e1e7f3;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #2446a6;
+            transition: width 0.25s ease;
+        }
+
+        #progressText {
+            font-weight: bold;
+            color: #2446a6;
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+
+    <header>
+        <h1>AI Career Companion</h1>
+        <p>Your personal guide to career planning, resume checking, and skill development.</p>
+    </header>
+
+    <!-- 1. CAREER GUIDANCE -->
+    <section id="careerGuidance">
+        <h2>1. Career Guidance</h2>
+        <p>Enter your details to explore suitable career options.</p>
+
+        <form id="careerForm">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" placeholder="Enter your name" required>
+
+            <label for="branch">Education / Branch</label>
+            <input type="text" id="branch" placeholder="e.g. B.Tech Computer Science" required>
+
+            <label for="interest">Career Interest</label>
+            <select id="interest" required>
+                <option value="">Select your interest</option>
+                <option value="coding">Programming and Software Development</option>
+                <option value="data">Data Analysis</option>
+                <option value="design">UI/UX Design</option>
+                <option value="networks">Networking and Cybersecurity</option>
+            </select>
+
+            <label for="skills">Your Current Skills</label>
+            <input type="text" id="skills" placeholder="e.g. Python, HTML, SQL">
+
+            <button type="submit">Get Career Suggestions</button>
+        </form>
+        <div id="result" aria-live="polite"></div>
+    </section>
+
+    <hr>
+
+    <!-- 2. RESUME CHECKER -->
+    <section id="resumeChecker">
+        <h2>2. AI Resume Checker</h2>
+        <p>Upload your PDF resume to identify skills mentioned in it.</p>
+
+        <form id="resumeForm">
+            <label for="resume">Upload Resume (PDF)</label>
+            <input type="file" id="resume" accept=".pdf,application/pdf" required>
+            <button type="submit">Analyze My Resume</button>
+        </form>
+        <div id="resumeResult" aria-live="polite"></div>
+    </section>
+
+    <hr>
+
+    <!-- 3. SKILL GAP ANALYSIS -->
+    <section id="skillGap">
+        <h2>3. Skill Gap Analysis</h2>
+        <p>Compare your current resume skills with your target career requirements.</p>
+
+        <label for="targetRole">Target Career</label>
+        <select id="targetRole">
+            <option value="python developer">Python Developer</option>
+            <option value="data analyst">Data Analyst</option>
+            <option value="web developer">Web Developer</option>
+        </select>
+
+        <button type="button" id="analyzeGapButton">Analyze Skill Gap</button>
+        <div id="skillGapResult" aria-live="polite"></div>
+    </section>
+
+    <hr>
+
+    <!-- 4. LEARNING ROADMAP AND PROGRESS -->
+    <section id="learningRoadmap">
+        <h2>4. Skill Learning Roadmap</h2>
+        <p>Choose a career and generate a step-by-step learning roadmap.</p>
+
+        <button type="button" id="roadmapButton">Generate Learning Roadmap</button>
+
+        <div id="roadmapResult" aria-live="polite"></div>
+    </section>
+
+<!-- 5. PERSONALIZED WEEKLY LEARNING PLAN -->
+<section id="weeklyLearningPlan">
+    <h2>5. Personalized Weekly Learning Plan</h2>
+    <p>Choose your target career to view a weekly learning plan.</p>
+
+    <label for="weeklyRole">Choose Career</label>
+    <select id="weeklyRole">
+        <option value="python developer">Python Developer</option>
+        <option value="data analyst">Data Analyst</option>
+        <option value="web developer">Web Developer</option>
+    </select>
+
+    <button type="button" id="weeklyPlanButton">
+        Generate Weekly Plan
+    </button>
+
+    <div id="weeklyPlanResult" aria-live="polite"></div>
+</section>
+
+    <hr>
+
+    <footer>
+        <p>AI Career Companion | Learn Skills. Build Projects. Grow Your Career.</p>
+    </footer>
+
+</main>
+
+<script>
+    let detectedResumeSkills = [];
+
+    // CAREER GUIDANCE
+    document.getElementById("careerForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const result = document.getElementById("result");
+        result.textContent = "Generating career suggestions...";
+
+        const data = {
+            name: document.getElementById("name").value.trim(),
+            branch: document.getElementById("branch").value.trim(),
+            interest: document.getElementById("interest").value,
+            skills: document.getElementById("skills").value.trim()
+        };
+
+        try {
+            const response = await fetch("/api/suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            const answer = await response.json();
+            if (!response.ok) throw new Error(answer.error || "Career suggestion failed.");
+
+            result.replaceChildren();
+
+            const heading = document.createElement("h3");
+            heading.textContent = "Your Career Recommendation";
+
+            const details = document.createElement("p");
+            details.textContent = "Name: " + answer.name + " | Education: " + answer.branch;
+
+            const career = document.createElement("p");
+            career.textContent = "Recommended Career: " + answer.career;
+
+            const next = document.createElement("p");
+            next.textContent = "Next Steps: " + answer.next_steps;
+
+            result.append(heading, details, career, next);
+        } catch (error) {
+            result.textContent = error.message || "Something went wrong.";
+        }
+    });
+
+    // RESUME CHECKER
+    document.getElementById("resumeForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const result = document.getElementById("resumeResult");
+        const file = document.getElementById("resume").files[0];
+
+        if (!file) {
+            result.textContent = "Please select a PDF resume.";
+            return;
+        }
+
+        if (!file.name.toLowerCase().endsWith(".pdf")) {
+            result.textContent = "Please upload a PDF file.";
+            return;
+        }
+
+        result.textContent = "Analyzing resume...";
+        detectedResumeSkills = [];
+        document.getElementById("skillGapResult").replaceChildren();
+
+        const formData = new FormData();
+        formData.append("resume", file);
+
+        try {
+            const response = await fetch("/api/resume", {
+                method: "POST",
+                body: formData
+            });
+
+            const answer = await response.json();
+            if (!response.ok) throw new Error(answer.error || "Resume analysis failed.");
+
+            detectedResumeSkills = Array.isArray(answer.skills) ? answer.skills : [];
+
+            result.replaceChildren();
+
+            const heading = document.createElement("h3");
+            heading.textContent = "Resume Analysis Results";
+
+            const filename = document.createElement("p");
+            filename.textContent = "File: " + answer.filename;
+
+            const count = document.createElement("p");
+            count.textContent = "Matching skills found: " + answer.skill_count;
+
+            const skills = document.createElement("p");
+            skills.textContent = "Skills: " +
+                (detectedResumeSkills.length ? detectedResumeSkills.join(", ") : "No matching skills detected.");
+
+            const message = document.createElement("p");
+            message.textContent = answer.message;
+
+            result.append(heading, filename, count, skills, message);
+        } catch (error) {
+            result.textContent = error.message || "Could not analyze the resume.";
+        }
+    });
+
+    // SKILL GAP ANALYSIS
+    document.getElementById("analyzeGapButton").addEventListener("click", async function() {
+        const result = document.getElementById("skillGapResult");
+        const role = document.getElementById("targetRole").value;
+
+        if (detectedResumeSkills.length === 0) {
+            result.textContent = "Please upload and analyze your resume first.";
+            return;
+        }
+
+        result.textContent = "Analyzing skill gap...";
+
+        try {
+            const response = await fetch("/api/skill-gap", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    role: role,
+                    skills: detectedResumeSkills
+                })
+            });
+
+            const answer = await response.json();
+            if (!response.ok) throw new Error(answer.error || "Skill gap analysis failed.");
+
+            result.replaceChildren();
+
+            const heading = document.createElement("h3");
+            heading.textContent = "Skill Gap Results: " + answer.role;
+
+            const matched = document.createElement("p");
+            matched.textContent = "Skills you have: " +
+                (answer.matched_skills.length ? answer.matched_skills.join(", ") : "No matching skills detected.");
+
+            const missing = document.createElement("p");
+            missing.textContent = "Skills to learn: " +
+                (answer.missing_skills.length ? answer.missing_skills.join(", ") : "You have all listed skills!");
+
+            const message = document.createElement("p");
+            message.textContent = answer.message;
+
+            result.append(heading, matched, missing, message);
+        } catch (error) {
+            result.textContent = error.message || "Something went wrong.";
+        }
+    });
+
+    // CAREER ROADMAP DATA
+    const roadmaps = {
+        "python developer": [
+            {
+                title: "Step 1: Python Fundamentals",
+                description: "Learn variables, data types, conditions, loops, lists, and functions.",
+                task: "Practise beginner Python programs."
+            },
+            {
+                title: "Step 2: Problem Solving",
+                description: "Improve logical thinking and learn basic algorithms.",
+                task: "Solve three beginner coding problems daily."
+            },
+            {
+                title: "Step 3: SQL and Databases",
+                description: "Learn SELECT, WHERE, ORDER BY, and JOIN.",
+                task: "Create a small student database."
+            },
+            {
+                title: "Step 4: Git, GitHub, and Flask",
+                description: "Learn version control and create web applications.",
+                task: "Build a small Flask application."
+            },
+            {
+                title: "Step 5: Portfolio Project",
+                description: "Combine your Python skills in a practical application.",
+                task: "Upload your project to GitHub and add it to your resume."
+            }
+        ],
+
+        "data analyst": [
+            {
+                title: "Step 1: Excel Fundamentals",
+                description: "Learn formulas, sorting, filtering, and pivot tables.",
+                task: "Analyze a sample sales spreadsheet."
+            },
+            {
+                title: "Step 2: SQL",
+                description: "Learn queries, filtering, grouping, and joins.",
+                task: "Analyze sample business data using SQL."
+            },
+            {
+                title: "Step 3: Python for Data Analysis",
+                description: "Learn Python basics and the pandas library.",
+                task: "Clean and analyze a dataset."
+            },
+            {
+                title: "Step 4: Power BI",
+                description: "Learn data visualization and dashboards.",
+                task: "Create a sales dashboard."
+            },
+            {
+                title: "Step 5: Portfolio Project",
+                description: "Combine data cleaning, analysis, and visualization.",
+                task: "Publish a data analysis project and explain your findings."
+            }
+        ],
+
+        "web developer": [
+            {
+                title: "Step 1: HTML",
+                description: "Learn page structure, links, forms, and semantic elements.",
+                task: "Build a personal profile webpage."
+            },
+            {
+                title: "Step 2: CSS",
+                description: "Learn layouts, Flexbox, Grid, and responsive design.",
+                task: "Style your webpage for desktop and mobile."
+            },
+            {
+                title: "Step 3: JavaScript",
+                description: "Learn variables, functions, arrays, objects, and DOM events.",
+                task: "Build an interactive digital clock."
+            },
+            {
+                title: "Step 4: React and Git",
+                description: "Learn components, props, state, and version control.",
+                task: "Build a small React application."
+            },
+            {
+                title: "Step 5: Portfolio Project",
+                description: "Create a complete responsive website.",
+                task: "Upload your project to GitHub and prepare a live demo."
+            }
+        ]
+    };
+
+    // GENERATE ROADMAP WITH CHECKBOXES AND PROGRESS BAR
+    function updateRoadmapProgress(result) {
+        const checkboxes = result.querySelectorAll(".roadmap-checkbox");
+        const total = checkboxes.length;
+        const completed = result.querySelectorAll(
+            ".roadmap-checkbox:checked"
+        ).length;
+
+        const percentage = total > 0
+            ? Math.round((completed / total) * 100)
+            : 0;
+
+        const progressText = result.querySelector("#progressText");
+        const progressBar = result.querySelector("#progressBar");
+
+        if (progressText) {
+            progressText.textContent =
+                "Progress: " + percentage + "% completed";
+        }
+
+        if (progressBar) {
+            progressBar.style.width = percentage + "%";
+        }
+    }
+
+    document.getElementById("roadmapButton").addEventListener("click", function() {
+        const role = document.getElementById("targetRole").value;
+        const result = document.getElementById("roadmapResult");
+        const steps = roadmaps[role];
+
+        result.replaceChildren();
+
+        const heading = document.createElement("h3");
+        heading.textContent =
+            document.getElementById("targetRole").selectedOptions[0].text +
+            " Learning Roadmap";
+
+        result.appendChild(heading);
+
+        const progressText = document.createElement("p");
+        progressText.id = "progressText";
+
+        const progressTrack = document.createElement("div");
+        progressTrack.className = "progress-track";
+
+        const progressBar = document.createElement("div");
+        progressBar.id = "progressBar";
+        progressBar.className = "progress-bar";
+
+        progressTrack.appendChild(progressBar);
+        result.append(progressText, progressTrack);
+
+        let savedProgress = {};
+
+        try {
+            savedProgress = JSON.parse(
+                localStorage.getItem("roadmapProgress") || "{}"
+            );
+        } catch (error) {
+            savedProgress = {};
+        }
+
+        steps.forEach(function(step) {
+            const card = document.createElement("div");
+            card.className = "roadmap-card";
+
+            const checkboxLabel = document.createElement("label");
+            checkboxLabel.className = "roadmap-check-label";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.className = "roadmap-checkbox";
+            checkbox.dataset.stepTitle = step.title;
+            checkbox.checked =
+                savedProgress[role + "|" + step.title] === true;
+
+            checkboxLabel.appendChild(checkbox);
+            checkboxLabel.appendChild(
+                document.createTextNode("Mark this step as completed")
+            );
+
+            const title = document.createElement("h3");
+            title.textContent = step.title;
+
+            const description = document.createElement("p");
+            description.textContent = step.description;
+
+            const task = document.createElement("p");
+            task.textContent = "Practice task: " + step.task;
+
+            card.append(checkboxLabel, title, description, task);
+            result.appendChild(card);
+        });
+
+        updateRoadmapProgress(result);
+    });
+
+    // UPDATE PROGRESS WHEN A CHECKBOX CHANGES
+    document.getElementById("roadmapResult").addEventListener("change", function(event) {
+        if (!event.target.classList.contains("roadmap-checkbox")) {
+            return;
+        }
+
+        const role = document.getElementById("targetRole").value;
+        const checkboxes = this.querySelectorAll(".roadmap-checkbox");
+
+        let savedProgress = {};
+
+        try {
+            savedProgress = JSON.parse(
+                localStorage.getItem("roadmapProgress") || "{}"
+            );
+        } catch (error) {
+            savedProgress = {};
+        }
+
+        checkboxes.forEach(function(box) {
+            const key = role + "|" + box.dataset.stepTitle;
+            savedProgress[key] = box.checked;
+        });
+
+        try {
+            localStorage.setItem(
+                "roadmapProgress",
+                JSON.stringify(savedProgress)
+            );
+        } catch (error) {
+            console.error("Could not save roadmap progress:", error);
+        }
+
+        updateRoadmapProgress(this);
+    });
+
+    // 5. PERSONALIZED WEEKLY LEARNING PLAN
+    const weeklyPlans = {
+        "python developer": [
+            {
+                week: "Week 1",
+                skill: "Python Fundamentals",
+                task: "Learn variables, data types, conditions, loops, and functions.",
+                project: "Build a simple calculator."
+            },
+            {
+                week: "Week 2",
+                skill: "Problem Solving and SQL",
+                task: "Practise coding problems and SQL queries.",
+                project: "Create a student database."
+            },
+            {
+                week: "Week 3",
+                skill: "Flask and APIs",
+                task: "Learn routes, HTTP requests, and JSON responses.",
+                project: "Build a small Flask API."
+            },
+            {
+                week: "Week 4",
+                skill: "Portfolio Project",
+                task: "Combine your Python and database skills.",
+                project: "Build and document a complete mini project."
+            }
+        ],
+        "data analyst": [
+            {
+                week: "Week 1",
+                skill: "Excel",
+                task: "Learn formulas, sorting, filtering, and pivot tables.",
+                project: "Analyze a sample sales spreadsheet."
+            },
+            {
+                week: "Week 2",
+                skill: "SQL",
+                task: "Practise SELECT, WHERE, GROUP BY, and JOIN.",
+                project: "Answer business questions using SQL."
+            },
+            {
+                week: "Week 3",
+                skill: "Python and Data Analysis",
+                task: "Learn pandas and basic data cleaning.",
+                project: "Analyze a small dataset."
+            },
+            {
+                week: "Week 4",
+                skill: "Data Visualization",
+                task: "Learn charts and dashboard basics.",
+                project: "Create a sales dashboard."
+            }
+        ],
+        "web developer": [
+            {
+                week: "Week 1",
+                skill: "HTML and CSS",
+                task: "Learn semantic HTML, Flexbox, and responsive layouts.",
+                project: "Build a personal profile webpage."
+            },
+            {
+                week: "Week 2",
+                skill: "JavaScript",
+                task: "Learn variables, functions, arrays, and DOM events.",
+                project: "Build an interactive digital clock."
+            },
+            {
+                week: "Week 3",
+                skill: "React Fundamentals",
+                task: "Learn components, props, and state.",
+                project: "Build a small React application."
+            },
+            {
+                week: "Week 4",
+                skill: "Portfolio and GitHub",
+                task: "Practise responsive design and version control.",
+                project: "Publish a portfolio website."
+            }
+        ]
+    };
+
+    document.getElementById("weeklyPlanButton").addEventListener("click", function() {
+        const role = document.getElementById("weeklyRole").value;
+        const result = document.getElementById("weeklyPlanResult");
+        const plan = weeklyPlans[role];
+
+        result.replaceChildren();
+
+        plan.forEach(function(item) {
+            const card = document.createElement("div");
+            card.className = "roadmap-card";
+
+            const heading = document.createElement("h3");
+            heading.textContent = item.week + ": " + item.skill;
+
+            const task = document.createElement("p");
+            task.textContent = "Learning target: " + item.task;
+
+            const project = document.createElement("p");
+            project.textContent = "Practice project: " + item.project;
+
+            card.append(heading, task, project);
+            result.appendChild(card);
+        });
+    });
+
+    
+</script>
+</body>
+</html>
